@@ -22,7 +22,7 @@ debug_exports = False
 
 show_caps = False
 
-nrows = 5  # key rows
+nrows = 4  # key rows
 ncols = 6  # key columns
 
 alpha = pi / 12.0  # curvature of the columns
@@ -219,9 +219,9 @@ external_holder_xoffset = -5.0
 
 def column_offset(column: int) -> list:
     if column == 2:
-        return [0, 2.82, -4.5]
+        return [0, 2.82, -4.5] # [0, 2.82, -4.5] dactyl manuform
     elif column >= 4:
-        return [0, -12, 5.64]  # original [0 -5.8 5.64]
+        return [0, -5.8, 5.64] # [0, -12, 5.64] dactyl manuform
     else:
         return [0, 0, 0]
 
