@@ -14,7 +14,6 @@ def deg2rad(degrees: float) -> float:
 def rad2deg(rad: float) -> float:
     return rad * 180 / pi
 
-
 debug_exports = False
 
 ######################
@@ -39,6 +38,7 @@ if nrows > 5:
     column_style = "orthographic"
 else:
     column_style = "standard"  # options include :standard, :orthographic, and :fixed
+
 
 thumb_offsets = [6, -3, 7]
 keyboard_z_offset = (
@@ -357,7 +357,10 @@ def tess_hull(shapes, sl_tol=.5, sl_angTol=1):
     return shape
 
 
+
+
 def single_plate(cylinder_segments=100, side="right"):
+
     if plate_style in ['NUB', 'HS_NUB']:
         top_wall = cq.Workplane("XY").box(mount_width, 1.5, plate_thickness)
         top_wall = top_wall.translate((0, (1.5 / 2) + (keyswitch_height / 2), plate_thickness / 2))
@@ -611,8 +614,6 @@ def caps():
 web_thickness = 4.0
 post_size = 0.2
 post_adj = post_size / 2
-
-
 # post_adj = 0
 
 
@@ -1010,6 +1011,7 @@ def bottom_hull(p, height=0.001):
     return shape
 
 
+
 def left_key_position(row, direction):
     print("left_key_position()")
     pos = np.array(
@@ -1132,7 +1134,7 @@ def right_wall():
         shape = shape.union(key_wall_brace(
             lastcol, y, 1, 0, web_post_tr(), lastcol, y, 1, 0, web_post_br()
         ))
-        # STRANGE PARTIAL OFFSET
+        #STRANGE PARTIAL OFFSET
 
     shape = shape.union(key_wall_brace(
         lastcol,
@@ -1482,7 +1484,6 @@ external_start = list(
     )
 )
 
-
 def external_mount_hole():
     print('external_mount_hole()')
     shape = cq.Workplane("XY").box(external_holder_width, 20.0, external_holder_height)
@@ -1494,6 +1495,7 @@ def external_mount_hole():
         )
     )
     return shape
+
 
 
 def oled_sliding_mount_frame():
@@ -1541,8 +1543,7 @@ def oled_sliding_mount_frame():
 
     top_hole_start = -mount_ext_height / 2.0 + oled_mount_rim + oled_edge_overlap_end + oled_edge_overlap_connector
     top_hole_length = oled_mount_height
-    top_hole = cq.Workplane("XY").box(oled_mount_width, top_hole_length,
-                                      oled_edge_overlap_thickness + oled_thickness - oled_edge_chamfer)
+    top_hole = cq.Workplane("XY").box(oled_mount_width, top_hole_length, oled_edge_overlap_thickness + oled_thickness - oled_edge_chamfer)
     top_hole = top_hole.translate((
         0,
         top_hole_start + top_hole_length / 2,
@@ -1578,21 +1579,21 @@ def oled_sliding_mount_frame():
 
     shape = rotate(shape, oled_mount_rotation_xyz)
     shape = translate(shape,
-                      (
-                          oled_mount_location_xyz[0],
-                          oled_mount_location_xyz[1],
-                          oled_mount_location_xyz[2],
-                      )
-                      )
+        (
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
+    )
 
     hole = rotate(hole, oled_mount_rotation_xyz)
     hole = translate(hole,
-                     (
-                         oled_mount_location_xyz[0],
-                         oled_mount_location_xyz[1],
-                         oled_mount_location_xyz[2],
-                     )
-                     )
+        (
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
+    )
     return hole, shape
 
 
@@ -1634,21 +1635,21 @@ def oled_clip_mount_frame():
 
     shape = rotate(shape, oled_mount_rotation_xyz)
     shape = translate(shape,
-                      (
-                          oled_mount_location_xyz[0],
-                          oled_mount_location_xyz[1],
-                          oled_mount_location_xyz[2],
-                      )
-                      )
+        (
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
+    )
 
     hole = rotate(hole, oled_mount_rotation_xyz)
     hole = translate(hole,
-                     (
-                         oled_mount_location_xyz[0],
-                         oled_mount_location_xyz[1],
-                         oled_mount_location_xyz[2],
-                     )
-                     )
+        (
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
+    )
 
     return hole, shape
 
@@ -1734,19 +1735,19 @@ def oled_undercut_mount_frame():
 
     shape = rotate(shape, oled_mount_rotation_xyz)
     shape = translate(shape, (
-        oled_mount_location_xyz[0],
-        oled_mount_location_xyz[1],
-        oled_mount_location_xyz[2],
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
     )
-                      )
 
     hole = rotate(hole, oled_mount_rotation_xyz)
     hole = translate(hole, (
-        oled_mount_location_xyz[0],
-        oled_mount_location_xyz[1],
-        oled_mount_location_xyz[2],
+            oled_mount_location_xyz[0],
+            oled_mount_location_xyz[1],
+            oled_mount_location_xyz[2],
+        )
     )
-                     )
 
     return hole, shape
 
@@ -1863,7 +1864,7 @@ def screw_insert_all_shapes(bottom_radius, top_radius, height):
     print('screw_insert_all_shapes()')
     shape = (
         screw_insert(0, 0, bottom_radius, top_radius, height),
-        screw_insert(0, lastrow - 1, bottom_radius, top_radius, height),
+        screw_insert(0, lastrow-1, bottom_radius, top_radius, height),
         screw_insert(2, lastrow + 0.3, bottom_radius, top_radius, height),
         screw_insert(3, 0, bottom_radius, top_radius, height),
         screw_insert(lastcol, 1, bottom_radius, top_radius, height),
@@ -1940,18 +1941,15 @@ def model_side(side="right"):
         cq.exporters.export(w=shape, fname=path.join(r"..", "things", r"debug_connector_shape.step"), exportType='STEP')
     thumb_shape = thumb(side=side)
     if debug_exports:
-        cq.exporters.export(w=thumb_shape, fname=path.join(r"..", "things", r"debug_thumb_shape.step"),
-                            exportType='STEP')
+        cq.exporters.export(w=thumb_shape, fname=path.join(r"..", "things", r"debug_thumb_shape.step"), exportType='STEP')
     shape = shape.union(thumb_shape)
     thumb_connector_shape = thumb_connectors()
     shape = shape.union(thumb_connector_shape)
     if debug_exports:
-        cq.exporters.export(w=shape, fname=path.join(r"..", "things", r"debug_thumb_connector_shape.step"),
-                            exportType='STEP')
+        cq.exporters.export(w=shape, fname=path.join(r"..", "things", r"debug_thumb_connector_shape.step"), exportType='STEP')
     walls_shape = case_walls()
     if debug_exports:
-        cq.exporters.export(w=walls_shape, fname=path.join(r"..", "things", r"debug_walls_shape.step"),
-                            exportType='STEP')
+        cq.exporters.export(w=walls_shape, fname=path.join(r"..", "things", r"debug_walls_shape.step"), exportType='STEP')
     s2 = cq.Workplane('XY').union(walls_shape)
     s2 = union([s2, *screw_insert_outers])
 
@@ -2004,6 +2002,8 @@ def model_side(side="right"):
     return shape
 
 
+
+
 mod_r = model_side(side="right")
 cq.exporters.export(w=mod_r, fname=path.join(r"..", "things", r"right_py.step"), exportType='STEP')
 
@@ -2035,12 +2035,10 @@ cq.exporters.export(w=base, fname=path.join(r"..", "things", r"plate_py.step"), 
 cq.exporters.export(w=base, fname=path.join(r"..", "things", r"plate_py.dxf"), exportType='DXF')
 
 if oled_mount_type == 'UNDERCUT':
-    cq.exporters.export(w=oled_undercut_mount_frame()[1], fname=path.join(r"..", "things", r"oled_undercut_test.step"),
-                        exportType='STEP')
+    cq.exporters.export(w=oled_undercut_mount_frame()[1], fname=path.join(r"..", "things", r"oled_undercut_test.step"), exportType='STEP')
 
 if oled_mount_type == 'SLIDING':
-    cq.exporters.export(w=oled_sliding_mount_frame()[1], fname=path.join(r"..", "things", r"oled_sliding_test.step"),
-                        exportType='STEP')
+    cq.exporters.export(w=oled_sliding_mount_frame()[1], fname=path.join(r"..", "things", r"oled_sliding_test.step"), exportType='STEP')
 
 if oled_mount_type == 'CLIP':
     oled_mount_location_xyz = (0.0, 0.0, -oled_mount_depth / 2)
