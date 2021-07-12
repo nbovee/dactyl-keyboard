@@ -12,3 +12,4 @@
 .idea/
 *.FCStd1
 debug_*
+*.code-workspace

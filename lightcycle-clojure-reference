@@ -239,13 +239,9 @@
 (defn thumb-place [column row shape]
   (let [cap-top-height (+ plate-thickness sa-profile-key-height)
         α (/ π 12)
-        row-radius (+ (/ (/ (+ mount-height 1) 2)
-                         (Math/sin (/ α 2)))
-                      cap-top-height)
+        row-radius (+ (/ (/ (+ mount-height 1) 2) (Math/sin (/ α 2))) cap-top-height)
         β (/ π 36)
-        column-radius (+ (/ (/ (+ mount-width 2) 2)
-                            (Math/sin (/ β 2)))
-                         cap-top-height)
+        column-radius (+ (/ (/ (+ mount-width 2) 2) (Math/sin (/ β 2))) cap-top-height)
         #_(+ (/ (/ (+ pillar-width 5) 2)
                 (Math/sin (/ β 2)))
              cap-top-height)]
