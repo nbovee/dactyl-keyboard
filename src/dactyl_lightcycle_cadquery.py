@@ -687,39 +687,34 @@ def connectors():
 ############
 ## Thumbs ##
 ############
-# convert thumb placements to columner style?
 
-# from lightcycle, (col row shape)
-# (defn thumb-layout [shape]
-#   (union
-#    (thumb-place 0 -1/2 (union shape (extended-plates 2)))
-#
-#    (thumb-place 1 7/8 (union shape (extended-plates 1.25)))
-#    (thumb-place 1 -5/8 (union shape (extended-plates 1.75)))
-#
-#    (thumb-place 2 -3/4 (union shape (extended-plates 1.5)))
-#    (thumb-place 2 3/4 (union shape (extended-plates 1.5)))
-#    ))
-# (defn thumb-place [column row shape]
-#   (let [cap-top-height (+ plate-thickness sa-profile-key-height)
-#         α (/ π 12)
-#         row-radius (+ (/ (/ (+ mount-height 1) 2) (Math/sin (/ α 2))) cap-top-height)
-#         β (/ π 36)
-#         column-radius (+ (/ (/ (+ mount-width 2) 2) (Math/sin (/ β 2))) cap-top-height)
-#         #_(+ (/ (/ (+ pillar-width 5) 2)
-#                 (Math/sin (/ β 2)))
-#              cap-top-height)]
-#     (->> shape
-#          (translate [0 0 (- row-radius)])
-#          (rotate (* α row) [1 0 0])
-#          (translate [0 0 row-radius])
-#          (translate [0 0 (- column-radius)])
-#          (rotate (* column β) [0 1 0])
-#          (translate [0 0 column-radius])
-#          (translate [mount-width 0 0])
-#          (rotate (* π (- 1/4 3/16)) [0 0 1])
-#          (rotate (/ π 12) [1 1 0])
-#          (translate [-52 -45 40]))))
+thumb_locations = [
+    [0, -1 / 2],
+    [1, 7 / 8],
+    [1, -5 / 8],
+    [2, -3 / 4],
+    [2, 3 / 4]
+]
+#START HERE TEST
+
+thumb_plates = [2, 1.25, 1.75, 1.5, 1.5]
+
+
+def thumb_place(column, row, shape):
+    # TEST cap_top_height, row_radius, col_radius already defined. Could split to allow more configuration.
+    shape = shape.translate([0, 0, -row_radius])
+    shape = rotate(shape, [rad2deg(alpha * row), 0, 0])
+    shape = shape.translate([0, 0, row_radius])
+
+    shape = shape.translate([0, 0, -column_radius])
+    shape = rotate(shape, [0, rad2deg(beta * column), 0])
+    shape = shape.translate([0, 0, column_radius])
+    # natural thumb location?
+    shape = shape.translate([mount_width, 0, 0])
+    shape = rotate(shape, [rad2deg(pi / 12), rad2deg(pi / 12), rad2deg(pi / 16)])  # originally 0,0, pi/16
+    # shape = rotate(shape, [pi / 12, pi / 12, 0])
+    shape = shape.translate([-52, -45, 40])
+    return shape
 
 
 def thumborigin():
@@ -730,87 +725,29 @@ def thumborigin():
     return origin
 
 
-def thumb_t_place(shape):
-    print('thumb_t_place()')
-    shape = rotate(shape, [10, -23, 10])
-    shape = shape.translate(thumborigin())
-    shape = shape.translate([-12, -16, 3])
-    return shape
-
-
-# Only five thumb keys on lightcycle
-# def thumb_tl_place(shape):
-#     print('thumb_tl_place()')
-#     shape = rotate(shape, [10, -23, 10])
-#     shape = shape.translate(thumborigin())
-#     shape = shape.translate([-32, -15, -2])
-#     return shape
-
-
-def thumb_mr_place(shape):
-    print('thumb_mr_place()')
-    shape = rotate(shape, [-6, -34, 48])
-    shape = shape.translate(thumborigin())
-    shape = shape.translate([-29, -40, -13])
-    return shape
-
-
-def thumb_ml_place(shape):
-    print('thumb_ml_place()')
-    shape = rotate(shape, [6, -34, 40])
-    shape = shape.translate(thumborigin())
-    shape = shape.translate([-51, -25, -12])
-    return shape
-
-
-def thumb_br_place(shape):
-    print('thumb_br_place()')
-    shape = rotate(shape, [-16, -33, 54])
-    shape = shape.translate(thumborigin())
-    shape = shape.translate([-37.8, -55.3, -25.3])
-    return shape
-
-
-def thumb_bl_place(shape):
-    print('thumb_bl_place()')
-    shape = rotate(shape, [-4, -35, 52])
-    shape = shape.translate(thumborigin())
-    shape = shape.translate([-56.3, -43.3, -23.5])
-    return shape
-
-
 def thumb_1x_layout(shape, cap=False):
     print('thumb_1x_layout()')
-    if cap:
+    if cap:  # convert to the else method
         shapes = thumb_mr_place(shape)
         shapes = shapes.add(thumb_ml_place(shape))
         shapes = shapes.add(thumb_br_place(shape))
         shapes = shapes.add(thumb_bl_place(shape))
     else:
         shapes = union(
-            [
-                thumb_mr_place(shape),
-                thumb_ml_place(shape),
-                thumb_br_place(shape),
-                thumb_bl_place(shape),
+            [  # above shape.add does not work well with the changing plate size
+                thumb_place(0, -1 / 2, union([shape, oversize_plate(2)])),  # 2u
+                thumb_place(1, 7 / 8, union([shape, oversize_plate(1.25)])),  # 1.25u
+                thumb_place(1, -5 / 8, union([shape, oversize_plate(1.75)])),  # 1.75u
+                thumb_place(2, -3 / 4, union([shape, oversize_plate(1.5)])),  # 1.5u
+                thumb_place(2, 3 / 4, union([shape, oversize_plate(1.5)]))  # 1.5u
             ]
         )
     return shapes
 
 
-def thumb_oversize_layout(shape, cap=False):
-    print('thumb_oversize_layout()')
-    if cap:
-        shape = rotate(shape, (0, 0, 90))
-        return thumb_t_place(shape).add(thumb_t_place(shape).solids().objects[0])
-    else:
-        return thumb_t_place(shape)  # TEST .union(thumb_tl_place(shape))
-
-
-def oversize_plate(ratio=2):
+def oversize_plate(ratio):
     print('oversize_plate()')
     plate_height = (sa_length * ratio - mount_height) / 3
-    # plate_height = (2*sa_length-mount_height) / 3
     top_plate = cq.Workplane("XY").box(mount_width, plate_height, web_thickness)
     top_plate = translate(top_plate,
                           [0, (plate_height + mount_height) / 2, plate_thickness - (web_thickness / 2)]
@@ -829,10 +766,10 @@ def thumbcaps():
 
 def thumb(side="right"):
     print('thumb()')
-    # shape = thumb_1x_layout(rotate(single_plate(side=side), (0, 0, -90)))
+    shape = thumb_1x_layout(rotate(single_plate(side=side), (0, 0, -90)))
     # shape = shape.union(
-    shape = thumb_oversize_layout(rotate(single_plate(side=side), (0, 0, -90)))  # )  # center portion of double plate
-    shape = shape.union(thumb_oversize_layout(oversize_plate()))  # outer portion of double plate
+    #     thumb_oversize_layout(rotate(single_plate(side=side), (0, 0, -90))))  # center portion of double plate
+    # shape = shape.union(thumb_oversize_layout(oversize_plate()))  # outer portion of double plate
     return shape
 
 
