@@ -309,7 +309,7 @@ def face_from_points(points):
 
 def hull_from_points(points):
     # print('hull_from_points()')
-    hull_calc = sphull(points)
+    hull_calc = sphull(points, qhull_options='')
     n_faces = len(hull_calc.simplices)
 
     faces = []
@@ -326,7 +326,7 @@ def hull_from_points(points):
 
 
 def hull_from_shapes(shapes, points=None):
-    # print('hull_from_shapes()')
+    print('hull_from_shapes()')
     vertices = []
     for shape in shapes:
         verts = shape.vertices()
@@ -334,13 +334,15 @@ def hull_from_shapes(shapes, points=None):
             vertices.append(np.array(vert.toTuple()))
     if points is not None:
         for point in points:
-            vertices.append(np.array(point))
-
+            vertices.append(np.array(point.startPoint()))
+            vertices.append(np.array(point.endPoint()))
+    print(points)
+    print(vertices)
     shape = hull_from_points(vertices)
     return shape
 
 
-def tess_hull(shapes, sl_tol=.5, sl_angTol=1):
+def tess_hull(shapes, sl_tol=.5, sl_ang_tol=1):
     # print('hull_from_shapes()')
     vertices = []
     solids = []
@@ -349,7 +351,7 @@ def tess_hull(shapes, sl_tol=.5, sl_angTol=1):
             solids.append(item)
 
     for shape in solids:
-        verts = shape.tessellate(sl_tol, sl_angTol)[0]
+        verts = shape.tessellate(sl_tol, sl_ang_tol)[0]
         for vert in verts:
             vertices.append(np.array(vert.toTuple()))
 
@@ -668,7 +670,7 @@ def web_edge_br():
     return web_edge().translate(((mount_width / 2) - post_adj, -(mount_height / 2) + post_adj, 0))
 
 
-def triangle_hulls(edges):
+def triangle_hulls(shapes):
     print('triangle_hulls()')
     hulls = [cq.Workplane('XY')]
     for i in range(len(shapes) - 2):
@@ -773,7 +775,7 @@ thumb_locations = [
     [2, 3 / 4],
     [2, -3 / 4]
 ]
-#START HERE TEST
+# START HERE TEST
 
 thumb_plates = [2, 1.25, 1.75, 1.5, 1.5]
 
@@ -791,7 +793,7 @@ def thumb_place(column, row, shape):
     shape = shape.translate([mount_width, 0, 0])
     shape = rotate(shape, [rad2deg(pi / 12), rad2deg(pi / 12), rad2deg(pi / 16)])  # originally 0,0, pi/16
     # shape = rotate(shape, [pi / 12, pi / 12, 0])
-    shape = shape.translate([-52, -45, 40])
+    shape = shape.translate([-52, -45, 40])  # move this out to wrapping method? currently here for location methods
     return shape
 
 
@@ -1985,6 +1987,10 @@ def model_side(side="right"):
                             exportType='STEP')
     shape = shape.union(thumb_shape)
     thumb_connector_shape = thumb_connectors()
+    if debug_exports:
+        cq.exporters.export(w=thumb_connector_shape,
+                            fname=path.join(r"..", "things", r"debug_thumb_connector_without_plates_shape.step"),
+                            exportType='STEP')
     shape = shape.union(thumb_connector_shape)
     if debug_exports:
         cq.exporters.export(w=shape, fname=path.join(r"..", "things", r"debug_thumb_connector_shape.step"),
