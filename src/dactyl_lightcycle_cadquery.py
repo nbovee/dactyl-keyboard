@@ -639,7 +639,36 @@ def web_post_br():
     return web_post().translate(((mount_width / 2) - post_adj, -(mount_height / 2) + post_adj, 0))
 
 
-def triangle_hulls(shapes):
+def web_edge():
+    print('web_edge()')
+    edge = cq.Workplane("XY").line(0, web_thickness)
+    edge = rotate(edge, [0, 90, 0])
+    edge = edge.translate((0, 0, plate_thickness - (web_thickness / 2)))
+    #print(edge)
+    return edge
+
+
+def web_edge_tr():
+    # print('web_edge_tr()')
+    return web_edge().translate(((mount_width / 2) - post_adj, (mount_height / 2) - post_adj, 0))
+
+
+def web_edge_tl():
+    # print('web_edge_tl()')
+    return web_edge().translate((-(mount_width / 2) + post_adj, (mount_height / 2) - post_adj, 0))
+
+
+def web_edge_bl():
+    # print('web_edge_bl()')
+    return web_edge().translate((-(mount_width / 2) + post_adj, -(mount_height / 2) + post_adj, 0))
+
+
+def web_edge_br():
+    # print('web_post_br()')
+    return web_edge().translate(((mount_width / 2) - post_adj, -(mount_height / 2) + post_adj, 0))
+
+
+def triangle_hulls(edges):
     print('triangle_hulls()')
     hulls = [cq.Workplane('XY')]
     for i in range(len(shapes) - 2):
@@ -647,6 +676,21 @@ def triangle_hulls(shapes):
 
     return union(hulls)
 
+
+def triangle_edge_hulls(edges):
+    print('triangle_hulls()')
+    vertices_list = []
+    vertices = edges.vertices()
+    for v in vertices.objects:
+        vertices_list.append(np.array(v.toTuple()))
+    for i in vertices_list:
+        print(i)
+    hulls = [cq.Workplane('XY')]
+    hulls.append(hull_from_points(vertices_list))
+    # for i in range(len(shapes) - 2):
+    #     hulls.append(hull_from_shapes(shapes[i: (i + 3)]), points)  # seems overdone
+
+    return union(hulls)
 
 def connectors():
     print('connectors()')
@@ -684,6 +728,40 @@ def connectors():
     return union(hulls)
 
 
+def connectors_web():
+    print('connectors()')
+    hulls = []
+    for column in range(ncols - 1):
+        for row in range(nrows):  # need to consider last_row? #TEST, last lastrow
+            # for row in range(nrows):  # need to consider last_row?
+            places = key_place(web_edge_tl(), column + 1, row)
+            places.add(key_place(web_edge_tr(), column, row))
+            places.add(key_place(web_edge_bl(), column + 1, row))
+            places.add(key_place(web_edge_br(), column, row))
+            hulls.append(triangle_hulls(places))
+
+    for column in range(ncols):
+        # for row in range(nrows-1):
+        for row in range(cornerrow):
+            places = []
+            places.append(key_place(web_edge_bl(), column, row))
+            places.append(key_place(web_edge_br(), column, row))
+            places.append(key_place(web_edge_tl(), column, row + 1))
+            places.append(key_place(web_edge_tr(), column, row + 1))
+            hulls.append(triangle_hulls(places))
+
+    for column in range(ncols - 1):
+        # for row in range(nrows-1):  # need to consider last_row?
+        for row in range(cornerrow):  # need to consider last_row?
+            places = []
+            places.append(key_place(web_edge_br(), column, row))
+            places.append(key_place(web_edge_tr(), column, row + 1))
+            places.append(key_place(web_edge_bl(), column + 1, row))
+            places.append(key_place(web_edge_tl(), column + 1, row + 1))
+            hulls.append(triangle_hulls(None, points=places))
+
+    return union(hulls)
+
 ############
 ## Thumbs ##
 ############
@@ -692,8 +770,8 @@ thumb_locations = [
     [0, -1 / 2],
     [1, 7 / 8],
     [1, -5 / 8],
-    [2, -3 / 4],
-    [2, 3 / 4]
+    [2, 3 / 4],
+    [2, -3 / 4]
 ]
 #START HERE TEST
 
@@ -734,14 +812,15 @@ def thumb_1x_layout(shape, cap=False):
         shapes = shapes.add(thumb_bl_place(shape))
     else:
         shapes = union(
-            [  # above shape.add does not work well with the changing plate size
+            [  # shape.add does not work well with the changing plate size
                 thumb_place(0, -1 / 2, union([shape, oversize_plate(2)])),  # 2u
                 thumb_place(1, 7 / 8, union([shape, oversize_plate(1.25)])),  # 1.25u
                 thumb_place(1, -5 / 8, union([shape, oversize_plate(1.75)])),  # 1.75u
-                thumb_place(2, -3 / 4, union([shape, oversize_plate(1.5)])),  # 1.5u
-                thumb_place(2, 3 / 4, union([shape, oversize_plate(1.5)]))  # 1.5u
+                thumb_place(2, 3 / 4, union([shape, oversize_plate(1.5)])),  # 1.5u
+                thumb_place(2, -3 / 4, union([shape, oversize_plate(1.5)]))  # 1.5u
             ]
         )
+        # shapes.translate(thumborigin()) # seemed not to do anything
     return shapes
 
 
@@ -755,7 +834,7 @@ def oversize_plate(ratio):
     return union((top_plate, mirror(top_plate, 'XZ')))
 
 
-def thumbcaps():
+def thumbcaps():  # broken
     t1 = thumb_1x_layout(sa_cap(1), cap=True)
     # t15 = thumb_15x_layout(rotate(sa_cap(1.5), [0, 0, pi / 2]), cap=True)
     # t125 = thumb_125x_layout(sa_cap(1.25), cap=True) #TEST, newline
@@ -773,169 +852,161 @@ def thumb(side="right"):
     return shape
 
 
-def thumb_post_tr():
+def thumb_post_tr(ratio):
     print('thumb_post_tr()')
-    return translate(web_post(),
-                     [(mount_width / 2) - post_adj, (mount_height / 1.15) - post_adj, 0]
-                     )
+    return translate(web_post_tr(), [0, sa_length * ratio, 0])
 
 
-def thumb_post_tl():
+def thumb_post_tl(ratio):
     print('thumb_post_tl()')
-    return translate(web_post(),
-                     [-(mount_width / 2) + post_adj, (mount_height / 1.15) - post_adj, 0]
-                     )
+    return translate(web_post_tl(), [0, sa_length * ratio, 0])
 
 
-def thumb_post_bl():
+def thumb_post_bl(ratio):
     print('thumb_post_bl()')
-    return translate(web_post(),
-                     [-(mount_width / 2) + post_adj, -(mount_height / 1.15) + post_adj, 0]
-                     )
+    return translate(web_post_bl(), [0, -sa_length * ratio, 0])
 
 
-def thumb_post_br():
+def thumb_post_br(ratio):
     print('thumb_post_br()')
-    return translate(web_post(),
-                     [(mount_width / 2) - post_adj, -(mount_height / 1.15) + post_adj, 0]
-                     )
+    return translate(web_post_br(), [0, -sa_length * ratio, 0])
 
 
 def thumb_connectors():
     print('thumb_connectors()')
     hulls = []
 
-    # Top two
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_t_place(thumb_post_tr()),
-                thumb_t_place(thumb_post_br()),
-                thumb_t_place(thumb_post_tl()),
-                thumb_t_place(thumb_post_bl()),
-            ]
-        )
-    )
+    # Top one, not needed
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_place(thumb_post_tr()),
+    #             thumb_place(thumb_post_br()),
+    #             thumb_place(thumb_post_tl()),
+    #             thumb_place(thumb_post_bl()),
+    #         ]
+    #     )
+    # )
 
     # bottom two on the right
     hulls.append(
         triangle_hulls(
-            [
-                thumb_br_place(web_post_tr()),
-                thumb_br_place(web_post_br()),
-                thumb_mr_place(web_post_tl()),
-                thumb_mr_place(web_post_bl()),
+            [  # fix generation bug here before uncommenting
+                thumb_place(2, -3 / 4, web_post_tr()),
+                thumb_place(2, -3 / 4, web_post_br()),
+                thumb_place(1, -5 / 8, web_post_tl()),
+                thumb_place(1, -5 / 8, web_post_bl()),
             ]
         )
     )
 
-    # bottom two on the left
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_br_place(web_post_tr()),
-                thumb_br_place(web_post_br()),
-                thumb_mr_place(web_post_tl()),
-                thumb_mr_place(web_post_bl()),
-            ]
-        )
-    )
-    # centers of the bottom four
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_bl_place(web_post_tr()),
-                thumb_bl_place(web_post_br()),
-                thumb_ml_place(web_post_tl()),
-                thumb_ml_place(web_post_bl()),
-            ]
-        )
-    )
-
-    # top two to the middle two, starting on the left
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_br_place(web_post_tl()),
-                thumb_bl_place(web_post_bl()),
-                thumb_br_place(web_post_tr()),
-                thumb_bl_place(web_post_br()),
-                thumb_mr_place(web_post_tl()),
-                thumb_ml_place(web_post_bl()),
-                thumb_mr_place(web_post_tr()),
-                thumb_ml_place(web_post_br()),
-            ]
-        )
-    )
-
-    # top two to the main keyboard, starting on the left
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_t_place(thumb_post_tl()),
-                thumb_ml_place(web_post_tr()),
-                thumb_t_place(thumb_post_bl()),
-                thumb_ml_place(web_post_br()),
-                thumb_t_place(thumb_post_br()),
-                thumb_mr_place(web_post_tr()),
-                thumb_t_place(thumb_post_bl()),
-                thumb_mr_place(web_post_br()),
-                thumb_t_place(thumb_post_br()),
-            ]
-        )
-    )
-
-    hulls.append(
-        triangle_hulls(
-            [
-                thumb_t_place(thumb_post_tl()),
-                key_place(web_post_bl(), 0, cornerrow),
-                thumb_t_place(thumb_post_tr()),
-                key_place(web_post_br(), 0, cornerrow),
-                thumb_t_place(thumb_post_tl()),
-                key_place(web_post_bl(), 1, cornerrow),
-                thumb_t_place(thumb_post_tr()),
-                key_place(web_post_br(), 1, cornerrow),
-                key_place(web_post_tl(), 2, lastrow),
-                key_place(web_post_bl(), 2, lastrow),
-                thumb_t_place(thumb_post_tr()),
-                key_place(web_post_bl(), 2, lastrow),
-                thumb_t_place(thumb_post_br()),
-                key_place(web_post_br(), 2, lastrow),
-                key_place(web_post_bl(), 3, lastrow),
-                key_place(web_post_tr(), 2, lastrow),
-                key_place(web_post_tl(), 3, lastrow),
-                key_place(web_post_bl(), 3, cornerrow),
-                key_place(web_post_tr(), 3, lastrow),
-                key_place(web_post_br(), 3, cornerrow),
-                key_place(web_post_bl(), 4, cornerrow),
-            ]
-        )
-    )
-
-    hulls.append(
-        triangle_hulls(
-            [
-                key_place(web_post_br(), 1, cornerrow),
-                key_place(web_post_tl(), 2, lastrow),
-                key_place(web_post_bl(), 2, cornerrow),
-                key_place(web_post_tr(), 2, lastrow),
-                key_place(web_post_br(), 2, cornerrow),
-                key_place(web_post_bl(), 3, cornerrow),
-            ]
-        )
-    )
-
-    hulls.append(
-        triangle_hulls(
-            [
-                key_place(web_post_tr(), 3, lastrow),
-                key_place(web_post_br(), 3, lastrow),
-                key_place(web_post_tr(), 3, lastrow),
-                key_place(web_post_bl(), 4, cornerrow),
-            ]
-        )
-    )
+    # # bottom two on the left
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_br_place(web_post_tr()),
+    #             thumb_br_place(web_post_br()),
+    #             thumb_mr_place(web_post_tl()),
+    #             thumb_mr_place(web_post_bl()),
+    #         ]
+    #     )
+    # )
+    # # centers of the bottom four
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_bl_place(web_post_tr()),
+    #             thumb_bl_place(web_post_br()),
+    #             thumb_ml_place(web_post_tl()),
+    #             thumb_ml_place(web_post_bl()),
+    #         ]
+    #     )
+    # )
+    #
+    # # top two to the middle two, starting on the left
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_br_place(web_post_tl()),
+    #             thumb_bl_place(web_post_bl()),
+    #             thumb_br_place(web_post_tr()),
+    #             thumb_bl_place(web_post_br()),
+    #             thumb_mr_place(web_post_tl()),
+    #             thumb_ml_place(web_post_bl()),
+    #             thumb_mr_place(web_post_tr()),
+    #             thumb_ml_place(web_post_br()),
+    #         ]
+    #     )
+    # )
+    #
+    # # top two to the main keyboard, starting on the left
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_t_place(thumb_post_tl()),
+    #             thumb_ml_place(web_post_tr()),
+    #             thumb_t_place(thumb_post_bl()),
+    #             thumb_ml_place(web_post_br()),
+    #             thumb_t_place(thumb_post_br()),
+    #             thumb_mr_place(web_post_tr()),
+    #             thumb_t_place(thumb_post_bl()),
+    #             thumb_mr_place(web_post_br()),
+    #             thumb_t_place(thumb_post_br()),
+    #         ]
+    #     )
+    # )
+    #
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             thumb_t_place(thumb_post_tl()),
+    #             key_place(web_post_bl(), 0, cornerrow),
+    #             thumb_t_place(thumb_post_tr()),
+    #             key_place(web_post_br(), 0, cornerrow),
+    #             thumb_t_place(thumb_post_tl()),
+    #             key_place(web_post_bl(), 1, cornerrow),
+    #             thumb_t_place(thumb_post_tr()),
+    #             key_place(web_post_br(), 1, cornerrow),
+    #             key_place(web_post_tl(), 2, lastrow),
+    #             key_place(web_post_bl(), 2, lastrow),
+    #             thumb_t_place(thumb_post_tr()),
+    #             key_place(web_post_bl(), 2, lastrow),
+    #             thumb_t_place(thumb_post_br()),
+    #             key_place(web_post_br(), 2, lastrow),
+    #             key_place(web_post_bl(), 3, lastrow),
+    #             key_place(web_post_tr(), 2, lastrow),
+    #             key_place(web_post_tl(), 3, lastrow),
+    #             key_place(web_post_bl(), 3, cornerrow),
+    #             key_place(web_post_tr(), 3, lastrow),
+    #             key_place(web_post_br(), 3, cornerrow),
+    #             key_place(web_post_bl(), 4, cornerrow),
+    #         ]
+    #     )
+    # )
+    #
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             key_place(web_post_br(), 1, cornerrow),
+    #             key_place(web_post_tl(), 2, lastrow),
+    #             key_place(web_post_bl(), 2, cornerrow),
+    #             key_place(web_post_tr(), 2, lastrow),
+    #             key_place(web_post_br(), 2, cornerrow),
+    #             key_place(web_post_bl(), 3, cornerrow),
+    #         ]
+    #     )
+    # )
+    #
+    # hulls.append(
+    #     triangle_hulls(
+    #         [
+    #             key_place(web_post_tr(), 3, lastrow),
+    #             key_place(web_post_br(), 3, lastrow),
+    #             key_place(web_post_tr(), 3, lastrow),
+    #             key_place(web_post_bl(), 4, cornerrow),
+    #         ]
+    #     )
+    # )
 
     return union(hulls)
 
